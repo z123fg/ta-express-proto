@@ -11,6 +11,8 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "outDir": "dist",   
+    "esModuleInterop": true,
+    "strict": false
   },
   "include": [
     "src"

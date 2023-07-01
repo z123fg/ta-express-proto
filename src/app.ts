@@ -1,32 +1,61 @@
-import * as express from "express"
-import { Request, Response } from "express"
+import { myDataSource } from "./db/db-resource";
 
-// create and setup express app
-const app = express()
-app.use(express.json())
-console.log("start!")
-// register routes
+import path from "path";
+import http from "http";
+import express from "express";
+import { Server } from "socket.io";
+import { config } from "dotenv";
+var cors = require("cors");
+config();
 
-app.get("/users", function (req: Request, res: Response) {
-    // here we will have logic to return all users
-    res.send("hello world");
-})
+myDataSource
+    .initialize()
+    .then(() => {
+        console.log("Data Source has been initialized!");
+    })
+    .catch((err) => {
+        console.error("Error during Data Source initialization:", err);
+    });
 
-app.get("/users/:id", function (req: Request, res: Response) {
-    // here we will have logic to return user by id
-})
+const app = express();
+app.use(cors());
 
-app.post("/users", function (req: Request, res: Response) {
-    // here we will have logic to save a user
-})
+const server = http.createServer(app);
 
-app.put("/users/:id", function (req: Request, res: Response) {
-    // here we will have logic to update a user by a given user id
-})
+const io = new Server(server, {
+    cors: {
+        origin: "*",
+    },
+});
 
-app.delete("/users/:id", function (req: Request, res: Response) {
-    // here we will have logic to delete a user by a given user id
-})
+app.use(express.static(path.join(__dirname, "public")));
 
-// start express server
-app.listen(3000);
+io.on("connection", (socket) => {
+    console.log("connected");
+    /* socket.on('login', ({ name, room }, callback) => {
+        const { user, error } = addUser(socket.id, name, room)
+        if (error) return callback(error)
+        socket.join(user.room)
+        socket.in(room).emit('notification', { title: 'Someone\'s here', description: `${user.name} just entered the room` })
+        io.in(room).emit('users', getUsers(room))
+        callback()
+    })
+
+    socket.on('sendMessage', message => {
+        const user = getUser(socket.id)
+        io.in(user.room).emit('message', { user: user.name, text: message });
+    })
+
+    socket.on("disconnect", () => {
+        console.log("User disconnected");
+        const user = deleteUser(socket.id)
+        if (user) {
+            io.in(user.room).emit('notification', { title: 'Someone just left', description: `${user.name} just left the room` })
+            io.in(user.room).emit('users', getUsers(user.room))
+        }
+    }) */
+});
+
+const PORT = process.env.PORT;
+
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
