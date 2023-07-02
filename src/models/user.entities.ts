@@ -1,28 +1,31 @@
 import { Entity, Column, PrimaryGeneratedColumn,ManyToMany,
-    JoinTable, } from "typeorm"
+    JoinTable,
+    OneToMany,
+    ManyToOne, } from "typeorm"
 import { Room } from "./room.entities"
 
 @Entity()
 export class User {
     @PrimaryGeneratedColumn()
-    id: number
+    id: string
 
-    @Column()
+    @Column({unique:true})
     userName: string
 
     @Column()
     ICE: string
 
-    @Column()
-    lastLogin: Date
+    @Column({nullable:true})
+    lastLogin: string
 
-    @Column()
-    lastActive: Date
+    @Column({nullable:true})
+    lastActive: string
 
+    @OneToMany(()=>Room, room=> room.owner)
+    createdRooms: Room[]
     
-    @ManyToMany(()=> Room)
-    @JoinTable()
-    rooms: Room[]
+    @ManyToOne(()=>Room, room=>room.users,{cascade:true})
+    room: Room
 
 
 

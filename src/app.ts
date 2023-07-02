@@ -3,8 +3,11 @@ import { myDataSource } from "./db/db-resource";
 import path from "path";
 import http from "http";
 import express from "express";
+import { Request, Response } from "express";
 import { Server } from "socket.io";
 import { config } from "dotenv";
+import { createRoom, getRooms, joinRoom } from "./services/room.service";
+import { createUser } from "./services/user.service";
 var cors = require("cors");
 config();
 
@@ -19,6 +22,8 @@ myDataSource
 
 const app = express();
 app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded());
 
 const server = http.createServer(app);
 
@@ -29,6 +34,32 @@ const io = new Server(server, {
 });
 
 app.use(express.static(path.join(__dirname, "public")));
+
+app.get("/rooms", async function (req: Request, res: Response) {
+    const rooms = await getRooms();
+    res.json(rooms);
+});
+
+app.post("/createuser", async function (req: Request, res: Response) {
+    const { body } = req;
+    console.log("body", body);
+    const insertResult = await createUser(body);
+    res.json(insertResult);
+});
+
+app.post("/createroom", async function (req: Request, res: Response) {
+    const { roomName, ownerId } = req.body;
+    console.log("body", roomName, ownerId);
+    const insertResult = await createRoom(roomName, ownerId);
+    res.json(insertResult);
+});
+
+app.post("/joinroom", async function (req: Request, res: Response) {
+    const { roomId, userId } = req.body;
+    console.log("body", roomId, userId);
+    const joinResult = await joinRoom(roomId, userId);
+    res.json(joinResult);
+});
 
 io.on("connection", (socket) => {
     console.log("connected");
