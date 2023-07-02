@@ -7,7 +7,9 @@ import { Request, Response } from "express";
 import { Server } from "socket.io";
 import { config } from "dotenv";
 import { createRoom, getRooms, joinRoom } from "./services/room.service";
-import { createUser } from "./services/user.service";
+import { createUser, findOnlineUsers } from "./services/user.service";
+import {authMiddleware} from "./middleware/auth"
+import {login, signup} from "./controllers/user"
 var cors = require("cors");
 config();
 
@@ -35,34 +37,28 @@ const io = new Server(server, {
 
 app.use(express.static(path.join(__dirname, "public")));
 
-app.get("/rooms", async function (req: Request, res: Response) {
-    const rooms = await getRooms();
-    res.json(rooms);
-});
+app.post("/login", login);
+app.post("signup", signup);
 
-app.post("/createuser", async function (req: Request, res: Response) {
-    const { body } = req;
-    console.log("body", body);
-    const insertResult = await createUser(body);
-    res.json(insertResult);
-});
-
-app.post("/createroom", async function (req: Request, res: Response) {
-    const { roomName, ownerId } = req.body;
-    console.log("body", roomName, ownerId);
-    const insertResult = await createRoom(roomName, ownerId);
-    res.json(insertResult);
-});
-
-app.post("/joinroom", async function (req: Request, res: Response) {
-    const { roomId, userId } = req.body;
-    console.log("body", roomId, userId);
-    const joinResult = await joinRoom(roomId, userId);
-    res.json(joinResult);
-});
-
-io.on("connection", (socket) => {
+io.use(authMiddleware)
+io.on("connection", async (socket) => {
     console.log("connected");
+    const onlineUsers = await findOnlineUsers();
+    const rooms = await getRooms();
+    io.emit("updateonlineuser", onlineUsers);
+    io.emit("updaterooms", rooms)
+    socket.on("joinroom", () => {
+
+    });
+    socket.on("createroom", () =>{
+
+    })
+    socket.on("quitroom", () => {
+
+    })
+    socket.on("removeroom", () =>{
+        
+    })
     /* socket.on('login', ({ name, room }, callback) => {
         const { user, error } = addUser(socket.id, name, room)
         if (error) return callback(error)

@@ -10,9 +10,12 @@ export class User {
     id: string
 
     @Column({unique:true})
-    userName: string
+    username: string
 
     @Column()
+    password: string
+
+    @Column({nullable:true})
     ICE: string
 
     @Column({nullable:true})
@@ -20,6 +23,9 @@ export class User {
 
     @Column({nullable:true})
     lastActive: string
+
+    @Column()
+    online: boolean
 
     @OneToMany(()=>Room, room=> room.owner)
     createdRooms: Room[]

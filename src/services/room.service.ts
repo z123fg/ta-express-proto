@@ -7,13 +7,13 @@ export const getRooms = async () => {
     return rooms;
 };
 
-export const createRoom = async (roomName, ownerId) => {
-  const userRepository = myDataSource.getRepository(User);
+export const createRoom = async (roomName: string, ownerId: string) => {
+    const userRepository = myDataSource.getRepository(User);
 
-    const owner = await userRepository.findOneBy({id:ownerId});
-    console.log("owner", owner)
+    const owner = await userRepository.findOneBy({ id: ownerId });
+    console.log("owner", owner);
     const roomRepository = myDataSource.getRepository(Room);
-    const room = await roomRepository.create({
+    const room = roomRepository.create({
         roomName,
         owner,
         users: [],
@@ -22,7 +22,25 @@ export const createRoom = async (roomName, ownerId) => {
     return roomRepository.insert(room);
 };
 
-export const joinRoom = async (roomId, userId) => {
+export const removeRoom = async (roomId: string, userId: string) => {
+    const roomRepository = myDataSource.getRepository(Room);
+    const room = await roomRepository.findOne({
+        where:{
+            id: roomId
+        },
+        relations: {
+            owner: true,
+        },
+    });
+
+    if(room.owner.id === userId){
+        roomRepository.remove(room)
+    }else{
+        throw Error("user is not the owner!")
+    }
+};
+
+export const joinRoom = async (roomId: string, userId: string) => {
     const userRepository = myDataSource.getRepository(User);
     const roomRepository = myDataSource.getRepository(Room);
 
@@ -31,7 +49,7 @@ export const joinRoom = async (roomId, userId) => {
         relations: { room: true },
     });
 
-    const targetRoom = await roomRepository.findOneBy({id: roomId});
-    user.room =targetRoom;
+    const targetRoom = await roomRepository.findOneBy({ id: roomId });
+    user.room = targetRoom;
     return userRepository.update(userId, user);
 };
