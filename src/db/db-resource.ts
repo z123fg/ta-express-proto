@@ -8,6 +8,6 @@ export const myDataSource = new DataSource({
     password: "Jingn63z93!",
     database: "ta-webrtc",
     entities: ["src/models/*.ts"],
-    logging: true,
+    logging: false,
     synchronize: true,
 })

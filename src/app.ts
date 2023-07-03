@@ -6,10 +6,11 @@ import express from "express";
 import { Request, Response } from "express";
 import { Server } from "socket.io";
 import { config } from "dotenv";
-import { createRoom, getRooms, joinRoom } from "./services/room.service";
-import { createUser, findOnlineUsers } from "./services/user.service";
-import {authMiddleware} from "./middleware/auth"
-import {login, signup} from "./controllers/user"
+import { createRoom, getRooms, joinRoom, removeRoom } from "./services/room.service";
+import { createUser, findOnlineUsers, loginUser, logoffUser, quitRoom } from "./services/user.service";
+import { authMiddleware } from "./middleware/auth";
+import { login, signup } from "./controllers/user";
+import { SocketOptions } from "dgram";
 var cors = require("cors");
 config();
 
@@ -37,50 +38,76 @@ const io = new Server(server, {
 
 app.use(express.static(path.join(__dirname, "public")));
 
-app.post("/login", login);
-app.post("signup", signup);
+app.post("/api/login", login);
+app.post("/api/signup", signup);
 
-io.use(authMiddleware)
-io.on("connection", async (socket) => {
-    console.log("connected");
-    const onlineUsers = await findOnlineUsers();
-    const rooms = await getRooms();
-    io.emit("updateonlineuser", onlineUsers);
-    io.emit("updaterooms", rooms)
-    socket.on("joinroom", () => {
+io.use(authMiddleware);
+io.on("connection", async (socket: any) => {
+    const { id: userId, username } = socket.user;
+    try {
+        await loginUser(userId);
+        const onlineUsers = await findOnlineUsers();
+        console.log("onlineusers", onlineUsers)
+        const rooms = await getRooms();
+        io.emit("updateonlineusers", onlineUsers);
+        socket.emit("updaterooms", rooms);
+    } catch (err) {
+        socket.emit("error", "failed to login, reason: " + err);
+    }
 
-    });
-    socket.on("createroom", () =>{
-
-    })
-    socket.on("quitroom", () => {
-
-    })
-    socket.on("removeroom", () =>{
-        
-    })
-    /* socket.on('login', ({ name, room }, callback) => {
-        const { user, error } = addUser(socket.id, name, room)
-        if (error) return callback(error)
-        socket.join(user.room)
-        socket.in(room).emit('notification', { title: 'Someone\'s here', description: `${user.name} just entered the room` })
-        io.in(room).emit('users', getUsers(room))
-        callback()
-    })
-
-    socket.on('sendMessage', message => {
-        const user = getUser(socket.id)
-        io.in(user.room).emit('message', { user: user.name, text: message });
-    })
-
-    socket.on("disconnect", () => {
-        console.log("User disconnected");
-        const user = deleteUser(socket.id)
-        if (user) {
-            io.in(user.room).emit('notification', { title: 'Someone just left', description: `${user.name} just left the room` })
-            io.in(user.room).emit('users', getUsers(user.room))
+    socket.on("joinroom", async (roomName: string, cb: Function) => {
+        try {
+            await joinRoom(roomName, userId);
+            const onlineUsers = await findOnlineUsers();
+            io.emit("updateonlineusers", onlineUsers);
+            cb({status:"ok"})
+        } catch (err) {
+            socket.emit("error", "failed to join room, reason: " + err);
         }
-    }) */
+    });
+
+    socket.on("createroom", async (roomName: string) => {
+        try {
+            await createRoom(roomName, userId);
+            const rooms = await getRooms();
+            io.emit("updaterooms", rooms);
+        } catch (err) {
+            socket.emit("error", "failed to create room, reason: " + err);
+        }
+    });
+
+    socket.on("quitroom", async () => {
+        try {
+            await quitRoom(userId);
+            const onlineUsers = await findOnlineUsers();
+            io.emit("updateonlineusers", onlineUsers);
+        } catch (err) {
+            socket.emit("error", "failed to quit room, reason: " + err);
+        }
+    });
+
+    socket.on("removeroom", async (roomId) => {
+        try {
+            await removeRoom(roomId, userId);
+            const onlineUsers = await findOnlineUsers();
+            const rooms = await getRooms();
+            io.emit("updateonlineuser", onlineUsers);
+            io.emit("updaterooms", rooms);
+        } catch (err) {
+            socket.emit("error", "failed to remove room, reason: " + err);
+        }
+    });
+
+    socket.on("disconnect", async () => {
+        try {
+            console.log("disconnect", username);
+            await logoffUser(userId);
+            const onlineUsers = await findOnlineUsers();
+            io.emit("updateonlineuser", onlineUsers);
+        } catch (err) {
+            socket.emit("error", "failed to logoff, reason: " + err);
+        }
+    });
 });
 
 const PORT = process.env.PORT;
