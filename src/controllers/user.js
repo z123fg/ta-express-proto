@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { createUser, findUser } from "../services/user.service";
+import { createUser, findUser, updateICE } from "../services/user.service";
 import { config } from "dotenv";
 config();
 const JWT_KEY = process.env.JWT_KEY;
@@ -20,7 +20,7 @@ export const signup = async (req, res) => {
 
 export const login = async (req, res) => {
     try {
-        const { username, password } = req.body;
+        const { username, password, ICEOffer ,ICEAnswer} = req.body;
         const user = await findUser(username);
         if (!user) throw Error("couldn't find user, please login");
 
@@ -39,6 +39,8 @@ export const login = async (req, res) => {
                 userId: user.id,
                 token,
             };
+            await updateICE(user.id, ICEOffer, ICEAnswer);
+
             res.json({ message: "login successfully!", user: userInfo });
         } else {
             throw Error("password doesn't match");

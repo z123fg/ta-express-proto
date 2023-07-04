@@ -11,10 +11,12 @@ export const findOnlineUsers = async () => {
     const userRepository = myDataSource.getRepository(User);
     const users = await userRepository.find({
         select: {
-            id:true,
+            id: true,
             username: true,
-            lastLogin:true,
-            lastActive:true,
+            lastLogin: true,
+            lastActive: true,
+            ICEOffer:true,
+            ICEAnswer:true
         },
         relations: {
             room: true,
@@ -33,6 +35,13 @@ export const createUser = async (username: string, password: string) => {
     return userRepository.insert(user);
 };
 
+export const updateICE = async (userId: string, ICEOffer: string,ICEAnswer:string) => {
+  console.log("ice", userId,ICEOffer)
+    const userRepository = myDataSource.getRepository(User);
+    const result = await userRepository.update({ id: userId }, { ICEOffer, ICEAnswer });
+    console.log("result", result)
+};
+
 //for login only
 export const findUser = async (username: string) => {
     const userRepository = myDataSource.getRepository(User);
@@ -42,15 +51,18 @@ export const findUser = async (username: string) => {
 
 export const quitRoom = async (userId: string) => {
     const userRepository = myDataSource.getRepository(User);
-    console.log("userId", userId)
+    console.log("userId", userId);
 
-    return userRepository.update({id: userId}, {room:null});
+    return userRepository.update({ id: userId }, { room: null });
 };
 
 export const loginUser = async (userId: string) => {
     const userRepository = myDataSource.getRepository(User);
 
-    await userRepository.update({id:userId}, {online: true, lastLogin: new Date()});
+    await userRepository.update(
+        { id: userId },
+        { online: true, lastLogin: new Date() }
+    );
 };
 
 export const logoffUser = async (userId: string) => {
@@ -59,5 +71,8 @@ export const logoffUser = async (userId: string) => {
         where: { id: userId },
     });
     user.online = false;
-    await userRepository.update({id: userId}, {online: false, room: null, ICE: null, lastActive: new Date()});
+    await userRepository.update(
+        { id: userId },
+        { online: false, room: null, ICEOffer: null, lastActive: new Date() }
+    );
 };

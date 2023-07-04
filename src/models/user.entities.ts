@@ -13,7 +13,10 @@ export class User {
     password: string;
 
     @Column({ nullable: true })
-    ICE: string;
+    ICEOffer: string;
+
+    @Column({ nullable: true })
+    ICEAnswer: string;
 
     @Column({ nullable: true, type: "timestamp" })
     lastLogin: Date;
