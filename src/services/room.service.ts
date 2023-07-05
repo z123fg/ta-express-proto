@@ -14,7 +14,7 @@ export const getRooms = async () => {
             users: true,
         },
     });
-    console.log("rooms", rooms);
+    //console.log("rooms", rooms);
     return rooms;
 };
 

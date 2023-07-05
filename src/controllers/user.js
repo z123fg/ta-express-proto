@@ -39,7 +39,7 @@ export const login = async (req, res) => {
                 userId: user.id,
                 token,
             };
-            await updateICE(user.id, ICEOffer, ICEAnswer);
+            //await updateICE(user.id, ICEOffer, ICEAnswer);
 
             res.json({ message: "login successfully!", user: userInfo });
         } else {

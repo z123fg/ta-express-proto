@@ -1,5 +1,6 @@
 import { Entity, Column, PrimaryGeneratedColumn, ManyToMany, JoinTable, OneToMany, ManyToOne } from "typeorm";
 import { Room } from "./room.entities";
+import { SessionDescription } from "./sessionDescription.entities";
 
 @Entity()
 export class User {
@@ -11,12 +12,6 @@ export class User {
 
     @Column()
     password: string;
-
-    @Column({ nullable: true })
-    ICEOffer: string;
-
-    @Column({ nullable: true })
-    ICEAnswer: string;
 
     @Column({ nullable: true, type: "timestamp" })
     lastLogin: Date;
@@ -32,4 +27,10 @@ export class User {
 
     @ManyToOne(() => Room, (room) => room.users, { cascade: true })
     room: Room;
+
+    @OneToMany(() => SessionDescription, (sessionDescription) => sessionDescription.owner)
+    ownerSessionDescription: SessionDescription[];
+
+    @OneToMany(() => SessionDescription, (sessionDescription) => sessionDescription.target)
+    targetSessionDescription: SessionDescription[];
 }

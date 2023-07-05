@@ -7,7 +7,14 @@ import { Request, Response } from "express";
 import { Server } from "socket.io";
 import { config } from "dotenv";
 import { createRoom, getRooms, joinRoom, removeRoom } from "./services/room.service";
-import { createUser, findOnlineUsers, loginUser, logoffUser, quitRoom } from "./services/user.service";
+import {
+    ISessionDescriptionMap,
+    loginUser,
+    logoffUser,
+    quitRoom,
+    syncOnlineUsers,
+    updateICE,
+} from "./services/user.service";
 import { authMiddleware } from "./middleware/auth";
 import { login, signup } from "./controllers/user";
 import { SocketOptions } from "dgram";
@@ -41,13 +48,22 @@ app.use(express.static(path.join(__dirname, "public")));
 app.post("/api/login", login);
 app.post("/api/signup", signup);
 
+const updateOnlineUsers = async () => {
+    const sockets: any[] = await io.fetchSockets();
+    const socketIds = sockets.map((socket) => socket.user.id);
+    console.log("socketids", socketIds);
+    const onlineUsers = await syncOnlineUsers(socketIds);
+    io.emit("updateonlineusers", onlineUsers);
+    return onlineUsers;
+};
+
 io.use(authMiddleware);
 io.on("connection", async (socket: any) => {
     const { id: userId, username } = socket.user;
+
     try {
         await loginUser(userId);
-        const onlineUsers = await findOnlineUsers();
-        console.log("onlineusers", onlineUsers)
+        const onlineUsers = await updateOnlineUsers();
         const rooms = await getRooms();
         io.emit("updateonlineusers", onlineUsers);
         socket.emit("updaterooms", rooms);
@@ -58,12 +74,18 @@ io.on("connection", async (socket: any) => {
     socket.on("joinroom", async (roomName: string, cb: Function) => {
         try {
             await joinRoom(roomName, userId);
-            const onlineUsers = await findOnlineUsers();
+            const onlineUsers = await updateOnlineUsers();
             io.emit("updateonlineusers", onlineUsers);
-            cb({status:"ok"})
+            cb({ status: "ok" });
         } catch (err) {
             socket.emit("error", "failed to join room, reason: " + err);
         }
+    });
+
+    socket.on("updateownersessiondescriptions", async (sessionDescriptionMap: ISessionDescriptionMap) => {
+        console.log("updateownersessiondescriptions", sessionDescriptionMap);
+        const ICEs = await updateICE(userId, sessionDescriptionMap);
+        io.emit("updatetargetsessiondescriptions", ICEs);
     });
 
     socket.on("createroom", async (roomName: string) => {
@@ -79,7 +101,7 @@ io.on("connection", async (socket: any) => {
     socket.on("quitroom", async () => {
         try {
             await quitRoom(userId);
-            const onlineUsers = await findOnlineUsers();
+            const onlineUsers = await updateOnlineUsers();
             io.emit("updateonlineusers", onlineUsers);
         } catch (err) {
             socket.emit("error", "failed to quit room, reason: " + err);
@@ -89,7 +111,7 @@ io.on("connection", async (socket: any) => {
     socket.on("removeroom", async (roomId) => {
         try {
             await removeRoom(roomId, userId);
-            const onlineUsers = await findOnlineUsers();
+            const onlineUsers = await updateOnlineUsers();
             const rooms = await getRooms();
             io.emit("updateonlineuser", onlineUsers);
             io.emit("updaterooms", rooms);
@@ -98,15 +120,18 @@ io.on("connection", async (socket: any) => {
         }
     });
 
-    socket.on("disconnect", async () => {
-        try {
-            console.log("disconnect", username);
-            await logoffUser(userId);
-            const onlineUsers = await findOnlineUsers();
-            io.emit("updateonlineuser", onlineUsers);
-        } catch (err) {
-            socket.emit("error", "failed to logoff, reason: " + err);
-        }
+    socket.on("disconnect", async (reason) => {
+        setTimeout(async () => {
+            try {
+                console.log("disconnect", username, reason);
+                await logoffUser(userId);
+                console.log("?");
+                const onlineUsers = await updateOnlineUsers();
+                io.emit("updateonlineusers", onlineUsers);
+            } catch (err) {
+                socket.emit("error", "failed to logoff, reason: " + err);
+            }
+        }, 0);
     });
 });
 
