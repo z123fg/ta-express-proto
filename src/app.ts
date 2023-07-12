@@ -82,10 +82,10 @@ io.on("connection", async (socket: any) => {
         }
     });
 
-    socket.on("updateownersessiondescriptions", async (sessionDescriptionMap: ISessionDescriptionMap) => {
-        console.log("updateownersessiondescriptions", sessionDescriptionMap);
+    socket.on("updatelds", async (sessionDescriptionMap: ISessionDescriptionMap) => {
+        console.log("updatelds")
         const ICEs = await updateICE(userId, sessionDescriptionMap);
-        io.emit("updatetargetsessiondescriptions", ICEs);
+        io.emit("updatesds", ICEs);
     });
 
     socket.on("createroom", async (roomName: string) => {
