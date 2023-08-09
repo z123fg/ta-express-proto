@@ -76,14 +76,6 @@ io.on("connection", async (socket: any) => {
         console.log(ownerId, targetId, SD, type);
         (await getSocket(targetId)).emit("sd", { ownerId, SD, type });
     });
-    socket.on("createroom", async (roomName: string) => {
-        try {
-            await createRoom(roomName, userId);
-            await debouncedUpdateStatus();
-        } catch (err) {
-            socket.emit("error", "failed to create room, reason: " + err);
-        }
-    });
 
     try {
         await loginUser(userId);
@@ -96,7 +88,7 @@ io.on("connection", async (socket: any) => {
         try {
             await joinRoom(roomName, userId);
             await debouncedUpdateStatus();
-            cb({ status: "ok" });
+            cb?.({ status: "ok" });
         } catch (err) {
             socket.emit("error", "failed to join room, reason: " + err);
         }

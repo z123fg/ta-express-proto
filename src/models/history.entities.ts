@@ -1,5 +1,4 @@
 import { Entity, Column, PrimaryGeneratedColumn, ManyToMany, JoinTable, ManyToOne } from "typeorm";
-import { User } from "./user.entities";
 import { Room } from "./room.entities";
 
 @Entity()

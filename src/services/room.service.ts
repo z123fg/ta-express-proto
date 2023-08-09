@@ -1,8 +1,6 @@
 import { myDataSource } from "../db/db-resource";
 import { Room } from "../models/room.entities";
-import { SessionDescription } from "../models/sessionDescription.entities";
 import { User } from "../models/user.entities";
-import { clearSDs } from "./user.service";
 
 export const getRooms = async () => {
     const rooms = await myDataSource.getRepository(Room).find({
@@ -21,6 +19,7 @@ export const getRooms = async () => {
 };
 
 export const createRoom = async (roomName: string, ownerId: string) => {
+    console.log("createroom")
     const userRepository = myDataSource.getRepository(User);
 
     const owner = await userRepository.findOneBy({ id: ownerId });
@@ -44,8 +43,8 @@ export const removeRoom = async (roomId: string, userId: string) => {
             owner: true,
         },
     });
-
-    if (room.owner.id === userId) {
+    
+    if (room?.owner?.id === userId) {
         await roomRepository.remove(room);
     } else {
         throw Error("user is not the owner!");
@@ -54,7 +53,6 @@ export const removeRoom = async (roomId: string, userId: string) => {
 
 export const joinRoom = async (roomName: string, userId: string) => {
     const userRepository = myDataSource.getRepository(User);
-    await clearSDs(userId)
     const roomRepository = myDataSource.getRepository(Room);
     const targetRoom = await roomRepository.findOneBy({ roomName });
     if (!targetRoom) throw Error("coudln't find this room!");
